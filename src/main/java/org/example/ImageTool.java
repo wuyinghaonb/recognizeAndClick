@@ -30,9 +30,12 @@ public class ImageTool {
     }
 
     public static PositionObject calcPositionObject(BufferedImage image, BufferedImage t) {
+        double min = Double.MAX_VALUE;
         for (int x = 0; x < image.getWidth(); ++x) {
             for (int y = 0; y < image.getHeight(); ++y) {
                 double loss = getLoss(x, y, image, t);
+                min = Math.min(min, loss);
+                System.out.println(min);
                 if (loss < 30) {
                     return new PositionObject(loss, x, y);
                 }
