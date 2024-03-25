@@ -7,15 +7,6 @@ import java.io.File;
 import java.util.List;
 
 public class OCR {
-    public static ITesseract newOCR() {
-        // 识别工具
-        ITesseract instance = new Tesseract();
-        ClassLoader classLoader = Main.class.getClassLoader();
-        File tessDataFolder = new File(classLoader.getResource("tessdata").getFile());
-        instance.setDatapath(tessDataFolder.getPath());
-        instance.setLanguage("chi_sim");
-        return instance;
-    }
 
     public static void doOCR(ITesseract instance, BufferedImage image) throws Exception {
         try {
