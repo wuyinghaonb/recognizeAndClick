@@ -24,9 +24,13 @@ public class Main {
     public static void main(String[] args) throws Exception {
 
         // 识别工具
-        File tessDataFolder = ResourceExtractor.extractTessdataFolder(); // 解压tessdata目录
-        Tesseract instance = new Tesseract();
-        instance.setDatapath(tessDataFolder.getPath());
+        // 获取JAR文件所在目录的路径
+        String jarDir = new File(Main.class.getProtectionDomain().getCodeSource().getLocation()
+                .toURI()).getParent();
+        // 构造tessdata目录的完整路径
+        String tessDataPath = jarDir + File.separator + "tessdata";
+        // 设置Tesseract的数据路径
+        instance.setDatapath(tessDataPath);
         instance.setLanguage("chi_sim");
 
         // 左上角图像
