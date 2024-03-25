@@ -16,8 +16,6 @@ import static org.example.ImageTool.convertToGrayscale;
 
 public class Main {
 
-    private final static int TRY_COUNT = 10;
-    private final static int WAIT_PAGE_LOAD_INTERVAL = 2000;
     private final static int WAIT_ROBOT_INTERVAL = 200;
     private final static ITesseract instance = new Tesseract();
 
@@ -36,23 +34,36 @@ public class Main {
         // 左上角图像
         BufferedImage a = ImageIO.read(ImageTool.class.getResource("/target.png"));
         // 模拟截屏，最终需要替换为截屏语句   BufferedImage screen = getScreen(robot);
-        BufferedImage screen = ImageIO.read(ImageTool.class.getResource("/05.png"));
+//        BufferedImage screen = ImageIO.read(ImageTool.class.getResource("/05.png"));
         // 左上角（0，0）
+        Robot robot = new Robot();
+        BufferedImage screen = ImageTool.getScreen(robot);
         PositionObject p = calcPositionObject(screen, a);
         if (p == null) {
             throw new Exception("未识别到游戏");
         }
-        Robot robot = new Robot();
 
-        BufferedImage targetField1 = screen.getSubimage(p.getX() + 45, p.getY() + 230, 240, 40);
-        BufferedImage targetField2 = screen.getSubimage(p.getX() + 45, p.getY() + 270, 240, 44);
-        BufferedImage targetField3 = screen.getSubimage(p.getX() + 45, p.getY() + 314, 240, 43);
-        BufferedImage targetField4 = screen.getSubimage(p.getX() + 45, p.getY() + 357, 240, 53);
+
+//        BufferedImage targetField1 = screen.getSubimage(p.getX() + 45, p.getY() + 230, 240, 40);
+//        BufferedImage targetField2 = screen.getSubimage(p.getX() + 45, p.getY() + 270, 240, 44);
+//        BufferedImage targetField3 = screen.getSubimage(p.getX() + 45, p.getY() + 314, 240, 43);
+//        BufferedImage targetField4 = screen.getSubimage(p.getX() + 45, p.getY() + 357, 240, 53);
         //     ImageIO.write(targetField, "png", new File("./screen.png"));
         while (true) {
             //词条区(45,230) (285,410)
-//            Rectangle captureArea = new Rectangle(p.getX() + 45, p.getY() + 230, p.getX() + 285, p.getY() + 410);
-//            BufferedImage targetField = robot.createScreenCapture(captureArea);
+            BufferedImage b = ImageTool.getScreen(robot);
+            BufferedImage targetField1 = b.getSubimage(p.getX() + 45, p.getY() + 230, 240, 40);
+            BufferedImage targetField2 = b.getSubimage(p.getX() + 45, p.getY() + 270, 240, 44);
+            BufferedImage targetField3 = b.getSubimage(p.getX() + 45, p.getY() + 314, 240, 43);
+            BufferedImage targetField4 = b.getSubimage(p.getX() + 45, p.getY() + 357, 240, 53);
+//            Rectangle captureArea1 = new Rectangle(p.getX() + 45, p.getY() + 230, p.getX() + 285, p.getY() + 410);
+//            BufferedImage targetField1 = robot.createScreenCapture(captureArea1);
+//            Rectangle captureArea2 = new Rectangle(p.getX() + 45, p.getY() + 270, p.getX() + 285, p.getY() + 410);
+//            BufferedImage targetField2 = robot.createScreenCapture(captureArea2);
+//            Rectangle captureArea3 = new Rectangle(p.getX() + 45, p.getY() + 314, p.getX() + 285, p.getY() + 410);
+//            BufferedImage targetField3 = robot.createScreenCapture(captureArea3);
+//            Rectangle captureArea4 = new Rectangle(p.getX() + 45, p.getY() + 357, p.getX() + 285, p.getY() + 410);
+//            BufferedImage targetField4 = robot.createScreenCapture(captureArea4);
             try {
                 // 获取每个词的坐标
                 int i = 0;

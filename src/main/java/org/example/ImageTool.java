@@ -1,10 +1,6 @@
 package org.example;
 
 import java.awt.*;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.StringSelection;
-import java.awt.datatransfer.Transferable;
 import java.awt.image.BufferedImage;
 
 public class ImageTool {
@@ -40,25 +36,6 @@ public class ImageTool {
             }
         }
         return null;
-    }
-
-    public static String getSystemClipboard() {
-        Clipboard sysClb;
-        sysClb = Toolkit.getDefaultToolkit().getSystemClipboard();
-        try {
-            Transferable t = sysClb.getContents(null);
-            if (null != t && t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
-                return (String) t.getTransferData(DataFlavor.stringFlavor);
-            }
-        } catch (Exception ignored) {
-        }
-        return null;
-    }
-
-    public static void setSysClipboardText(String msg) {
-        Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
-        Transferable tText = new StringSelection(msg);
-        clip.setContents(tText, null);
     }
 
     public static BufferedImage convertToGrayscale(BufferedImage original) {
