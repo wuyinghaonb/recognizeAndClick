@@ -30,11 +30,13 @@ public class Main {
         if (p == null) {
             throw new Exception("未识别到游戏");
         }
-
+        System.out.println(p.getX() + " "+ p.getY());
         Robot robot = new Robot();
-        //词条区(450,230) (285,410)
-        Rectangle captureArea = new Rectangle(p.getX() + 450, p.getY() + 230, p.getX() + 285, p.getX() + 410);
-        BufferedImage targetField = robot.createScreenCapture(captureArea);
+        //词条区(45,230) (285,410)
+//        Rectangle captureArea = new Rectangle(p.getX() + 45, p.getY() + 230, 240, 180);
+//        BufferedImage targetField = robot.createScreenCapture(captureArea);
+        BufferedImage targetField = screen.getSubimage(p.getX() + 45, p.getY() + 230, 240, 180);
+
         ImageIO.write(targetField, "png", new File("./screen.png"));
         try {
             // 进行OCR识别
