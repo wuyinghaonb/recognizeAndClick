@@ -24,8 +24,8 @@ public class Main {
     public static void main(String[] args) throws Exception {
 
         // 识别工具
-        ClassLoader classLoader = Main.class.getClassLoader();
-        File tessDataFolder = new File(classLoader.getResource("tessdata").getFile());
+        File tessDataFolder = ResourceExtractor.extractTessdataFolder(); // 解压tessdata目录
+        Tesseract instance = new Tesseract();
         instance.setDatapath(tessDataFolder.getPath());
         instance.setLanguage("chi_sim");
 
