@@ -60,4 +60,28 @@ public class ImageTool {
         Transferable tText = new StringSelection(msg);
         clip.setContents(tText, null);
     }
+
+    public static BufferedImage convertToGrayscale(BufferedImage original) {
+        // 创建一个同样大小的空白灰度图像
+        BufferedImage grayscale = new BufferedImage(original.getWidth(),
+                original.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
+
+        // 遍历原始图像的每个像素
+        for (int i = 0; i < original.getWidth(); i++) {
+            for (int j = 0; j < original.getHeight(); j++) {
+                // 获取当前像素的颜色
+                Color originalColor = new Color(original.getRGB(i, j));
+
+                // 计算灰度值（使用常见的加权法计算）
+                int grayValue = (int)(originalColor.getRed() * 0.299 +
+                        originalColor.getGreen() * 0.587 +
+                        originalColor.getBlue() * 0.114);
+                Color grayColor = new Color(grayValue, grayValue, grayValue);
+
+                // 设置新图像的当前像素为计算后的灰度值
+                grayscale.setRGB(i, j, grayColor.getRGB());
+            }
+        }
+        return grayscale;
+    }
 }
