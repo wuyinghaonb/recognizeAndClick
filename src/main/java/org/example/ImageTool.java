@@ -1,13 +1,11 @@
 package org.example;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.image.BufferedImage;
-import java.io.File;
 
 public class ImageTool {
     public static double getLoss(int x, int y, BufferedImage image, BufferedImage t) {
@@ -35,7 +33,7 @@ public class ImageTool {
             for (int y = 0; y < image.getHeight(); ++y) {
                 double loss = getLoss(x, y, image, t);
                 min = Math.min(min, loss);
-                System.out.println(min);
+                System.out.println(loss+" " +min);
                 if (loss < 30) {
                     return new PositionObject(loss, x, y);
                 }
@@ -61,10 +59,5 @@ public class ImageTool {
         Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
         Transferable tText = new StringSelection(msg);
         clip.setContents(tText, null);
-    }
-
-    public static void main(String[] args) throws Exception {
-        BufferedImage image = getScreen(new Robot());
-        ImageIO.write(image, "png", new File("./screen.png"));
     }
 }
