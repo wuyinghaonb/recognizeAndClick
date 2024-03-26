@@ -12,17 +12,24 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.example.ImageTool.calcPositionObject;
-import static org.example.ImageTool.convertToGrayscale;
 
 
 public class Main {
 
     private final static int WAIT_ROBOT_INTERVAL = 10;
-    private static AtomicInteger i = new AtomicInteger(0);
-    private static final ExecutorService executor = Executors.newFixedThreadPool(4); // 假设我们需要两个线程
+    private static final AtomicInteger i = new AtomicInteger(0);
+    private static final AtomicBoolean screenChanged = new AtomicBoolean(false);
+    private static final ExecutorService executor = Executors.newFixedThreadPool(4);
+    private static final ThreadLocal<BufferedImage> threadLocalLastImage = new ThreadLocal<>();
+    private static final ThreadLocal<Robot> threadLocalRobot = ThreadLocal.withInitial(() -> {
+        try {
+            return new Robot();
+        } catch (AWTException e) {
+            throw new RuntimeException(e);
+        }
+    });
     private static final ThreadLocal<ITesseract> threadLocalTesseract = ThreadLocal.withInitial(() -> {
         ITesseract instance = new Tesseract();
         // 识别工具
@@ -43,16 +50,15 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-
         // 左上角图像
         BufferedImage a = ImageIO.read(Objects.requireNonNull(ImageTool.class.getResource("/target.png")));
 
         // 左上角（0，0）
         Robot robot = new Robot();
 //        BufferedImage screen = ImageTool.getScreen(robot);
-        BufferedImage screen = ImageIO.read(ImageTool.class.getResource("/01.png"));;
+        BufferedImage screen = ImageIO.read(Objects.requireNonNull(ImageTool.class.getResource("/01.png")));
 
-        PositionObject p = calcPositionObject(screen, a);
+        PositionObject p = ImageTool.calcPositionObject(screen, a);
         if (p == null) {
             throw new Exception("未识别到游戏");
         }
@@ -62,19 +68,16 @@ public class Main {
         while (true) {
             //词条区(45,230) (285,410)
 //            BufferedImage b = ImageTool.getScreen(robot);
-            BufferedImage b = ImageIO.read(ImageTool.class.getResource("/01.png"));
+            //           BufferedImage b = ImageIO.read(Objects.requireNonNull(ImageTool.class.getResource("/01.png")));
             // todo 要么反复截屏计算哈希感知变化，要么设置延迟
 //            BufferedImage t0 = b.getSubimage(p.getX() + 45, p.getY() + 230, 240, 53);
-            BufferedImage targetField1 = b.getSubimage(p.getX() + 45, p.getY() + 230, 240, 40);
-            BufferedImage targetField2 = b.getSubimage(p.getX() + 45, p.getY() + 270, 240, 44);
-            BufferedImage targetField3 = b.getSubimage(p.getX() + 45, p.getY() + 314, 240, 43);
-            BufferedImage targetField4 = b.getSubimage(p.getX() + 45, p.getY() + 357, 240, 53);
+
             try {
                 // 异步任务
-                CompletableFuture<Integer> future1 = countAsync(targetField1);
-                CompletableFuture<Integer> future2 = countAsync(targetField2);
-                CompletableFuture<Integer> future3 = countAsync(targetField3);
-                CompletableFuture<Integer> future4 = countAsync(targetField4);
+                CompletableFuture<Integer> future1 = countAsync(p.getX() + 45, p.getY() + 230, p.getX() + 285, p.getY() + 270);
+                CompletableFuture<Integer> future2 = countAsync(p.getX() + 45, p.getY() + 270, p.getX() + 285, p.getY() + 314);
+                CompletableFuture<Integer> future3 = countAsync(p.getX() + 45, p.getY() + 314, p.getX() + 285, p.getY() + 357);
+                CompletableFuture<Integer> future4 = countAsync(p.getX() + 45, p.getY() + 357, p.getX() + 285, p.getY() + 410);
 
                 // 任务都完成后，累加结果
                 CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(future1, future2, future3, future4)
@@ -96,6 +99,16 @@ public class Main {
                     robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
                     robot.delay(WAIT_ROBOT_INTERVAL);
                     robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+
+                    // 等待屏幕变化
+                    CompletableFuture<Boolean> f1 = screenCompare(p.getX() + 45, p.getY() + 230, p.getX() + 285, p.getY() + 270);
+                    CompletableFuture<Boolean> f2 = screenCompare(p.getX() + 45, p.getY() + 270, p.getX() + 285, p.getY() + 314);
+                    CompletableFuture<Boolean> f3 = screenCompare(p.getX() + 45, p.getY() + 314, p.getX() + 285, p.getY() + 357);
+                    CompletableFuture<Boolean> f4 = screenCompare(p.getX() + 45, p.getY() + 357, p.getX() + 285, p.getY() + 410);
+
+                    CompletableFuture<?> f = CompletableFuture.anyOf(f1, f2, f3, f4);
+                    f.join();
+
                 } else {
                     robot.mouseMove(0, 0);
                     robot.delay(500);
@@ -118,8 +131,10 @@ public class Main {
                 res++;
             }
         }
+        // 保存图片
+        threadLocalLastImage.set(targetField);
         // 黑白
-        targetField = convertToGrayscale(targetField);
+        targetField = ImageTool.convertToGrayscale(targetField);
         ocrResult = instance.doOCR(targetField);
         System.out.println(ocrResult);
         l = instance.getWords(targetField, ITessAPI.TessPageIteratorLevel.RIL_WORD);
@@ -135,11 +150,34 @@ public class Main {
         }
     }
 
-    public static CompletableFuture<Integer> countAsync(BufferedImage targetField) {
-        // 异步执行OCR并返回CompletableFuture，使用类共享的线程池
+    // 统计攻击
+    public static CompletableFuture<Integer> countAsync(int a, int b, int c, int d) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return count(targetField); // 你的count方法
+                Robot robot = threadLocalRobot.get();
+                BufferedImage targetField = robot.createScreenCapture(new Rectangle(a, b, c, d));
+                return count(targetField);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, executor);
+    }
+
+    // 检测变化
+    public static CompletableFuture<Boolean> screenCompare(int a, int b, int c, int d) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                Robot robot = threadLocalRobot.get();
+                BufferedImage lastImage = threadLocalLastImage.get();
+
+                while (!screenChanged.get() && !Thread.currentThread().isInterrupted()) {
+                    BufferedImage currentImage = robot.createScreenCapture(new Rectangle(a, b, c, d));
+                    if (lastImage != null && !ImageTool.areImagesEqual(lastImage, currentImage)) {
+                        screenChanged.set(true);
+                        return true;
+                    }
+                }
+                return false;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

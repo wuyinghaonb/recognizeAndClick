@@ -58,4 +58,18 @@ public class ImageTool {
         }
         return grayscale;
     }
+
+    public static boolean areImagesEqual(BufferedImage imgA, BufferedImage imgB) {
+        if (imgA == imgB) return true;
+        if (imgA == null || imgB == null) return false;
+        if (imgA.getWidth() != imgB.getWidth() || imgA.getHeight() != imgB.getHeight()) return false;
+
+        for (int y = 0; y < imgA.getHeight(); y++) {
+            for (int x = 0; x < imgA.getWidth(); x++) {
+                if (imgA.getRGB(x, y) != imgB.getRGB(x, y)) return false;
+            }
+        }
+        return true;
+    }
+
 }
