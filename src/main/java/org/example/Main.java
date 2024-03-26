@@ -22,12 +22,9 @@ public class Main {
 
     private final static int WAIT_ROBOT_INTERVAL = 10;
     private static AtomicInteger i = new AtomicInteger(0);
-    private final static ITesseract instance = new Tesseract();
     private static final ExecutorService executor = Executors.newFixedThreadPool(4); // 假设我们需要两个线程
-
-
-    public static void main(String[] args) throws Exception {
-
+    private static final ThreadLocal<ITesseract> threadLocalTesseract = ThreadLocal.withInitial(() -> {
+        ITesseract instance = new Tesseract();
         // 识别工具
         // 获取JAR文件所在目录的路径
         try {
@@ -38,9 +35,14 @@ public class Main {
             // 设置Tesseract的数据路径
             instance.setDatapath(tessDataPath);
             instance.setLanguage("chi_sim");
+            return instance;
         } catch (Exception e) {
-            throw new Exception("语言包加载失败");
+            throw new RuntimeException(e);
         }
+    });
+
+    public static void main(String[] args) throws Exception {
+
 
         // 左上角图像
         BufferedImage a = ImageIO.read(Objects.requireNonNull(ImageTool.class.getResource("/target.png")));
@@ -104,6 +106,7 @@ public class Main {
     }
 
     public static int count(BufferedImage targetField) throws Exception {
+        ITesseract instance = threadLocalTesseract.get();
         int res = 0;
         String ocrResult = instance.doOCR(targetField);
         System.out.println(ocrResult);
