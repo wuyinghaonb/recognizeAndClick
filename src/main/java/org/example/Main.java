@@ -9,6 +9,10 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.example.ImageTool.calcPositionObject;
 import static org.example.ImageTool.convertToGrayscale;
@@ -17,7 +21,10 @@ import static org.example.ImageTool.convertToGrayscale;
 public class Main {
 
     private final static int WAIT_ROBOT_INTERVAL = 10;
+    private static AtomicInteger i = new AtomicInteger(0);
     private final static ITesseract instance = new Tesseract();
+    private static final ExecutorService executor = Executors.newFixedThreadPool(4); // 假设我们需要两个线程
+
 
     public static void main(String[] args) throws Exception {
 
@@ -31,7 +38,7 @@ public class Main {
             // 设置Tesseract的数据路径
             instance.setDatapath(tessDataPath);
             instance.setLanguage("chi_sim");
-        } catch(Exception e){
+        } catch (Exception e) {
             throw new Exception("语言包加载失败");
         }
 
@@ -48,21 +55,38 @@ public class Main {
         }
 
         //     ImageIO.write(targetField, "png", new File("./screen.png"));
+        int totalCount = 0;
         while (true) {
             //词条区(45,230) (285,410)
             BufferedImage b = ImageTool.getScreen(robot);
+            // todo 要么反复截屏计算哈希感知变化，要么设置延迟
+//            BufferedImage t0 = b.getSubimage(p.getX() + 45, p.getY() + 230, 240, 53);
             BufferedImage targetField1 = b.getSubimage(p.getX() + 45, p.getY() + 230, 240, 40);
             BufferedImage targetField2 = b.getSubimage(p.getX() + 45, p.getY() + 270, 240, 44);
             BufferedImage targetField3 = b.getSubimage(p.getX() + 45, p.getY() + 314, 240, 43);
             BufferedImage targetField4 = b.getSubimage(p.getX() + 45, p.getY() + 357, 240, 53);
             try {
-                int i = 0;
-                i += count(targetField1);
-                i += count(targetField2);
-                i += count(targetField3);
-                i += count(targetField4);
+                // 异步任务
+                CompletableFuture<Integer> future1 = countAsync(targetField1);
+                CompletableFuture<Integer> future2 = countAsync(targetField2);
+                CompletableFuture<Integer> future3 = countAsync(targetField3);
+                CompletableFuture<Integer> future4 = countAsync(targetField4);
+
+                // 任务都完成后，累加结果
+                CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(future1, future2, future3, future4)
+                        .thenRun(() -> {
+                            i.addAndGet(future1.join());
+                            i.addAndGet(future2.join());
+                            i.addAndGet(future3.join());
+                            i.addAndGet(future4.join());
+                        });
+                // 等待所有任务完成
+                combinedFuture.join();
+
                 System.out.println("识别到" + i + "条攻击");
-                if (i < 2) {
+                if (i.get() < 2) {
+                    totalCount++;
+                    System.out.println("祈愿第" + totalCount + "次");
                     robot.mouseMove(p.getX() + 770, p.getY() + 700);
                     robot.delay(WAIT_ROBOT_INTERVAL);
                     robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
@@ -73,7 +97,7 @@ public class Main {
                     robot.delay(500);
                     break;
                 }
-            } catch (TesseractException e) {
+            } catch (Exception e) {
                 throw new Exception(e.getMessage());
             }
         }
@@ -104,5 +128,16 @@ public class Main {
         } else {
             return 0;
         }
+    }
+
+    public static CompletableFuture<Integer> countAsync(BufferedImage targetField) {
+        // 异步执行OCR并返回CompletableFuture，使用类共享的线程池
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return count(targetField); // 你的count方法
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, executor);
     }
 }
