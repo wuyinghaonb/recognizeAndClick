@@ -55,9 +55,8 @@ public class Main {
 
         // 左上角（0，0）
         Robot robot = new Robot();
-//        BufferedImage screen = ImageTool.getScreen(robot);
-        BufferedImage screen = ImageIO.read(Objects.requireNonNull(ImageTool.class.getResource("/01.png")));
-
+        BufferedImage screen = ImageTool.getScreen(robot);
+//        BufferedImage screen = ImageIO.read(Objects.requireNonNull(ImageTool.class.getResource("/01.png")));
         PositionObject p = ImageTool.calcPositionObject(screen, a);
         if (p == null) {
             throw new Exception("未识别到游戏");
@@ -67,11 +66,6 @@ public class Main {
         int totalCount = 0;
         while (true) {
             //词条区(45,230) (285,410)
-//            BufferedImage b = ImageTool.getScreen(robot);
-            //           BufferedImage b = ImageIO.read(Objects.requireNonNull(ImageTool.class.getResource("/01.png")));
-            // todo 要么反复截屏计算哈希感知变化，要么设置延迟
-//            BufferedImage t0 = b.getSubimage(p.getX() + 45, p.getY() + 230, 240, 53);
-
             try {
                 // 异步任务
                 CompletableFuture<Integer> future1 = countAsync(p.getX() + 45, p.getY() + 230, p.getX() + 285, p.getY() + 270);
